@@ -39,3 +39,6 @@ build
 
 # Cache folder
 .cache
+
+# VS Code
+.vscode
