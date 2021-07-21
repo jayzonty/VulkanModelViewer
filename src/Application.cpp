@@ -25,6 +25,9 @@ Application::Application()
     , m_vkRenderPass(VK_NULL_HANDLE)
     , m_vkSwapchainFramebuffers()
     , m_maxFramesInFlight(1)
+    , m_camera()
+    , m_renderer()
+    , m_currentModel()
 {
 }
 
@@ -39,6 +42,29 @@ void Application::Run()
         Cleanup();
         return;
     }
+
+    m_currentModel = new Model();
+    m_currentModel->Load("resources/models/just_a_girl/scene.gltf");
+
+    if (m_currentModel != nullptr)
+    {
+        std::cout << "Model mesh count: " << m_currentModel->GetMeshes().size() << std::endl;
+        for (size_t i = 0; i < m_currentModel->GetMeshes().size(); ++i)
+        {
+            std::cout << "Mesh " << i << ": " << m_currentModel->GetMeshes()[i]->vertices.size() << " vertices " << m_currentModel->GetMeshes()[i]->indices.size() << " indices" << std::endl;
+        }
+    }
+
+    if (!m_renderer.Initialize(m_maxFramesInFlight, m_vkRenderPass))
+    {
+        std::cout << "Failed to initialize renderer!" << std::endl;
+    }
+
+    m_camera.GetCamera().SetFieldOfView(90.0f);
+    m_camera.GetCamera().SetAspectRatio(GetSwapchainImageExtent().width * 1.0f / GetSwapchainImageExtent().height);
+    m_camera.SetOrbitDistance(3.0f);
+    m_camera.SetPitch(0.0f);
+    m_camera.SetYaw(0.0f);
 
     double prevTime = glfwGetTime();
 
@@ -110,7 +136,7 @@ void Application::Run()
 
         // Clear values (1 for color buffer, 1 for depth buffer)
         std::array<VkClearValue, 2> clearValues;
-        clearValues[0].color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
+        clearValues[0].color = {{ 1.0f, 0.0f, 0.0f, 1.0f }};
         clearValues[1].depthStencil = { 1.0f, 0 };
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
@@ -259,6 +285,44 @@ bool Application::Initialize()
  */
 void Application::Update(float deltaTime)
 {
+    float sensitivity = 1.0f;
+    if (Input::IsDown(Input::RIGHT_MOUSE))
+    {
+        m_camera.SetYaw(m_camera.GetYaw() + Input::GetMouseDeltaX() * sensitivity);
+
+        float pitch = m_camera.GetPitch() + Input::GetMouseDeltaY() * sensitivity;
+        pitch = std::clamp(pitch, -89.0f, 89.0f);
+        m_camera.SetPitch(pitch);
+    }
+
+    float moveSpeed = 5.0f;
+    glm::vec3 cameraForward = m_camera.GetCamera().GetForwardVector();
+    glm::vec3 cameraRight = m_camera.GetCamera().GetRightVector();
+
+    glm::vec3 movementVector(0.0f);
+    if (Input::IsDown(Input::Key::W))
+    {
+        movementVector += cameraForward;
+    }
+    else if (Input::IsDown(Input::S))
+    {
+        movementVector -= cameraForward;
+    }
+
+    if (Input::IsDown(Input::Key::A))
+    {
+        movementVector -= cameraRight;
+    }
+    else if (Input::IsDown(Input::Key::D))
+    {
+        movementVector += cameraRight;
+    }
+
+    if (glm::dot(movementVector, movementVector) > 0.0f)
+    {
+        movementVector = glm::normalize(movementVector);
+        m_camera.SetLookTarget(m_camera.GetLookTarget() + movementVector * moveSpeed * deltaTime);
+    }
 }
 
 /**
@@ -268,6 +332,13 @@ void Application::Update(float deltaTime)
  */
 void Application::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
+    m_renderer.Begin();
+
+    m_renderer.DrawModel(m_currentModel);
+
+    m_renderer.End();
+
+    m_renderer.Render(commandBuffer, imageIndex, m_camera.GetViewMatrix(), m_camera.GetProjectionMatrix());
 }
 
 void Application::Cleanup()
@@ -301,6 +372,11 @@ void Application::Cleanup()
     m_vkFrameInFlightFences.clear();
     m_vkRenderFinishedSemaphores.clear();
     m_vkImageAvailableSemaphores.clear();
+
+    delete m_currentModel;
+    m_currentModel = nullptr;
+
+    m_renderer.Cleanup();
 
     VulkanContext::Cleanup();
 
@@ -537,7 +613,7 @@ bool Application::InitSwapchain()
         }
     }
 
-    m_maxFramesInFlight = std::min(static_cast<uint32_t>(m_vkSwapchainImages.size()), 2U);
+    m_maxFramesInFlight = static_cast<uint32_t>(m_vkSwapchainImages.size());
 
     return true;
 }

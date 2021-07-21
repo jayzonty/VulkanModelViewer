@@ -1,5 +1,9 @@
 #pragma once
 
+#include "Graphics/Model.hpp"
+#include "Graphics/OrbitCamera.hpp"
+#include "Graphics/Renderer.hpp"
+
 #include "Graphics/Vulkan/VulkanImage.hpp"
 #include "Graphics/Vulkan/VulkanImageView.hpp"
 
@@ -116,6 +120,15 @@ private:
      * Maximum number of frames in flight
      */
     uint32_t m_maxFramesInFlight;
+
+    /**
+     * Orbit camera
+     */
+    OrbitCamera m_camera;
+
+    Renderer m_renderer;
+
+    Model* m_currentModel;
 
 private:
     /**
