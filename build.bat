@@ -3,7 +3,7 @@ if not exist build\ (
 )
 
 cd build\
-cmake -G "MinGW Makefiles" ..
+cmake -DCMAKE_BUILD_TYPE="Release" -G "MinGW Makefiles" ..
 
 cmake --build .
 
