@@ -19,11 +19,7 @@ Model::Model()
  */
 Model::~Model()
 {
-    for (size_t i = 0; i < m_meshes.size(); ++i)
-    {
-        delete m_meshes[i];
-    }
-    m_meshes.clear();
+    Cleanup();
 }
 
 /**
@@ -33,6 +29,8 @@ Model::~Model()
  */
 bool Model::Load(const std::string& modelFilePath)
 {
+    Cleanup();
+    
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(modelFilePath.c_str(), aiProcess_PreTransformVertices | aiProcess_Triangulate | aiProcess_FlipUVs);
 
@@ -42,7 +40,7 @@ bool Model::Load(const std::string& modelFilePath)
         return false;
     }
 
-    std::string directory = modelFilePath.substr(0, modelFilePath.find_last_of('/'));
+    std::string directory = modelFilePath.substr(0, modelFilePath.find_last_of('\\'));
     std::cout << "Model directory: " << directory << std::endl;
 
     ProcessNode(scene->mRootNode, scene);
@@ -51,7 +49,7 @@ bool Model::Load(const std::string& modelFilePath)
     {
         for (size_t j = 0; j < m_meshes[i]->diffuseMapFilePaths.size(); ++j)
         {
-            m_meshes[i]->diffuseMapFilePaths[j] = directory + "/" + m_meshes[i]->diffuseMapFilePaths[j];
+            m_meshes[i]->diffuseMapFilePaths[j] = directory + "\\" + m_meshes[i]->diffuseMapFilePaths[j];
             std::cout << "Texture " << j << ": " << m_meshes[i]->diffuseMapFilePaths[j];
         }
         std::cout << "Mesh " << i << " diffuse map count: " << m_meshes[i]->diffuseMapFilePaths.size() << std::endl;
@@ -179,4 +177,16 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, Mesh* outMesh)
             outMesh->diffuseMapFilePaths.push_back(textureFilePath.C_Str());
         }
     }
+}
+
+/**
+ * @brief Cleans up resources.
+ */
+void Model::Cleanup()
+{
+    for (size_t i = 0; i < m_meshes.size(); ++i)
+    {
+        delete m_meshes[i];
+    }
+    m_meshes.clear();
 }

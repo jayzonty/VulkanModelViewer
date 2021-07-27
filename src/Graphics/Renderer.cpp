@@ -231,6 +231,11 @@ void Renderer::End()
  */
 void Renderer::Render(VkCommandBuffer commandBuffer, const uint32_t& imageIndex, const glm::mat4& viewMatrix, const glm::mat4& projMatrix)
 {
+    if (m_renderBatchUnits.size() == 0)
+    {
+        return;
+    }
+    
     glm::mat4 projectionCorrectionMatrix(1.0f); // Since Vulkan's NDC has the +y-axis going downwards, we need to flip the y-axis
     projectionCorrectionMatrix[1][1] = -1.0f;
 

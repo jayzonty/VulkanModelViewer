@@ -276,4 +276,12 @@ private:
      * @param[in] mods Key modifiers
      */
     static void KeyCallback(GLFWwindow* window, int key, int scanCode, int action, int mods);
+
+    /**
+     * @brief Callback function for when file paths has been dropped to the window.
+     * @param[in] window Reference to the window that generated the event
+     * @param[in] count Number of paths
+     * @param[in] paths Array of file paths
+     */
+    static void DropCallback(GLFWwindow* window, int count, const char** paths);
 };

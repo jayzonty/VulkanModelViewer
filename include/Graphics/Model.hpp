@@ -66,4 +66,9 @@ private:
      * @param[out] outMesh Transformed mesh data
      */
     void ProcessMesh(aiMesh* mesh, const aiScene* scene, Mesh* outMesh);
+
+    /**
+     * @brief Cleans up resources.
+     */
+    void Cleanup();
 };

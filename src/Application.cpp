@@ -47,18 +47,6 @@ void Application::Run()
         return;
     }
 
-    m_currentModel = new Model();
-    m_currentModel->Load("resources/models/just_a_girl/scene.gltf");
-
-    if (m_currentModel != nullptr)
-    {
-        std::cout << "Model mesh count: " << m_currentModel->GetMeshes().size() << std::endl;
-        for (size_t i = 0; i < m_currentModel->GetMeshes().size(); ++i)
-        {
-            std::cout << "Mesh " << i << ": " << m_currentModel->GetMeshes()[i]->vertices.size() << " vertices " << m_currentModel->GetMeshes()[i]->indices.size() << " indices" << std::endl;
-        }
-    }
-
     if (!m_renderer.Initialize(m_maxFramesInFlight, m_vkRenderPass))
     {
         std::cout << "Failed to initialize renderer!" << std::endl;
@@ -260,6 +248,9 @@ bool Application::Initialize()
     glfwSetCursorEnterCallback(m_window, Input::CursorEnterCallback);
     glfwSetCursorPosCallback(m_window, Input::CursorCallback);
     glfwSetScrollCallback(m_window, Input::MouseScrollCallback);
+
+    // Set drop callback function
+    glfwSetDropCallback(m_window, Application::DropCallback);
 
     if (!VulkanContext::Initialize(m_window))
     {
@@ -1019,4 +1010,26 @@ void Application::KeyCallback(GLFWwindow* window, int key, int scanCode, int act
     {
         glfwSetWindowSize(window, 400, 300);
     }
+}
+
+/**
+ * @brief Callback function for when file paths has been dropped to the window.
+ * @param[in] window Reference to the window that generated the event
+ * @param[in] count Number of paths
+ * @param[in] paths Array of file paths
+ */
+void Application::DropCallback(GLFWwindow* window, int count, const char** paths)
+{
+    Application* application = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (application == nullptr)
+    {
+        return;
+    }
+
+    if (application->m_currentModel == nullptr)
+    {
+        application->m_currentModel = new Model();
+    }
+
+    application->m_currentModel->Load(paths[0]);
 }
