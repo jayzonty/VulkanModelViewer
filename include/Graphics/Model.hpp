@@ -33,6 +33,18 @@ public:
      */
     const std::vector<Mesh*>& GetMeshes() const;
 
+    /**
+     * @brief Gets the total number of vertices in the model.
+     * @return Total vertex count
+     */
+    uint32_t GetTotalVertexCount() const;
+
+    /**
+     * @brief Gets the total number of triangles in the model.
+     * @return Total triangle count
+     */
+    uint32_t GetTotalTriangleCount() const;
+
 private:
     /**
      * List of meshes in the model

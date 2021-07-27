@@ -130,6 +130,8 @@ private:
 
     Model* m_currentModel;
 
+    VkDescriptorPool m_vkImguiPool;
+
 private:
     /**
      * @brief Initializes the application.

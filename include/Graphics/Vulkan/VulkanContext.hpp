@@ -86,6 +86,18 @@ public:
      */
     static VkCommandPool GetDefaultCommandPool();
 
+    /**
+     * @brief Begins a single use command buffer.
+     * @return Returns the command buffer that was created.
+     */
+    static VkCommandBuffer BeginSingleUseCommandBuffer();
+
+    /**
+     * @brief Ends the single use command buffer.
+     * @param[in] commandBuffer Command buffer to end
+     */
+    static void EndSingleUseCommandBuffer(VkCommandBuffer commandBuffer);
+
 private:
     /**
      * Struct containing the indices for each queue type

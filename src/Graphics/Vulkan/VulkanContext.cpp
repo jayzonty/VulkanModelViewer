@@ -110,6 +110,49 @@ VkCommandPool VulkanContext::GetDefaultCommandPool()
 }
 
 /**
+ * @brief Begins a single use command buffer.
+ * @return Returns the command buffer that was created.
+ */
+VkCommandBuffer VulkanContext::BeginSingleUseCommandBuffer()
+{
+    VkCommandBufferAllocateInfo commandBufferAllocInfo = {};
+    commandBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocInfo.commandPool = VulkanContext::GetDefaultCommandPool();
+    commandBufferAllocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(GetLogicalDevice(), &commandBufferAllocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+
+    return commandBuffer;
+}
+
+/**
+ * @brief Ends the single use command buffer.
+ * @param[in] commandBuffer Command buffer to end
+ */
+void VulkanContext::EndSingleUseCommandBuffer(VkCommandBuffer commandBuffer)
+{
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(GetGraphicsQueue());
+
+    vkFreeCommandBuffers(GetLogicalDevice(), GetDefaultCommandPool(), 1, &commandBuffer);
+}
+
+/**
  * @brief Constructor
  */
 VulkanContext::VulkanContext()

@@ -70,6 +70,35 @@ const std::vector<Mesh*>& Model::GetMeshes() const
 }
 
 /**
+ * @brief Gets the total number of vertices in the model.
+ * @return Total vertex count
+ */
+uint32_t Model::GetTotalVertexCount() const
+{
+    uint32_t ret = 0;
+    for (size_t i = 0; i < m_meshes.size(); ++i)
+    {
+        ret += m_meshes[i]->vertices.size();
+    }
+    return ret;
+}
+
+/**
+ * @brief Gets the total number of triangles in the model.
+ * @return Total triangle count
+ */
+uint32_t Model::GetTotalTriangleCount() const
+{
+    uint32_t ret = 0;
+    for (size_t i = 0; i < m_meshes.size(); ++i)
+    {
+        ret += m_meshes[i]->indices.size();
+    }
+    ret /= 3;
+    return ret;
+}
+
+/**
  * @brief Processes an Assimp node.
  * @param[in] node Assimp node
  * @param[in] scene Assimp scene

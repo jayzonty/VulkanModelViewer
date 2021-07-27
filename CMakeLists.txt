@@ -24,10 +24,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Specify include directories
-include_directories(${Vulkan_INCLUDE_DIR} deps/glm/include deps/assimp/include deps/stbi/include include)
+include_directories(${Vulkan_INCLUDE_DIR} deps/glm/include deps/assimp/include deps/stbi/include deps/imgui include)
 
 # Set SOURCES to contain all the source files
 set(SOURCES
+    deps/imgui/imgui.cpp
+    deps/imgui/imgui_demo.cpp
+    deps/imgui/imgui_draw.cpp
+    deps/imgui/imgui_impl_glfw.cpp
+    deps/imgui/imgui_impl_vulkan.cpp
+    deps/imgui/imgui_tables.cpp
+    deps/imgui/imgui_widgets.cpp
+
     src/Graphics/Vulkan/VulkanBuffer.cpp
     src/Graphics/Vulkan/VulkanContext.cpp
     src/Graphics/Vulkan/VulkanImage.cpp
