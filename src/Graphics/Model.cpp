@@ -4,6 +4,7 @@
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
 
+#include <filesystem>
 #include <iostream>
 
 /**
@@ -40,8 +41,11 @@ bool Model::Load(const std::string& modelFilePath)
         return false;
     }
 
-    std::string directory = modelFilePath.substr(0, modelFilePath.find_last_of('\\'));
-    std::cout << "Model directory: " << directory << std::endl;
+    std::filesystem::path modelDirPath = modelFilePath;
+    modelDirPath = modelDirPath.make_preferred();
+    modelDirPath = modelDirPath.remove_filename();
+
+    std::cout << "Model directory: " << modelDirPath << std::endl;
 
     ProcessNode(scene->mRootNode, scene);
 
@@ -49,7 +53,8 @@ bool Model::Load(const std::string& modelFilePath)
     {
         for (size_t j = 0; j < m_meshes[i]->diffuseMapFilePaths.size(); ++j)
         {
-            m_meshes[i]->diffuseMapFilePaths[j] = directory + "\\" + m_meshes[i]->diffuseMapFilePaths[j];
+            std::filesystem::path diffuseMapFilePath = modelDirPath / m_meshes[i]->diffuseMapFilePaths[j];
+            m_meshes[i]->diffuseMapFilePaths[j] = diffuseMapFilePath.string();
             std::cout << "Texture " << j << ": " << m_meshes[i]->diffuseMapFilePaths[j];
         }
         std::cout << "Mesh " << i << " diffuse map count: " << m_meshes[i]->diffuseMapFilePaths.size() << std::endl;
