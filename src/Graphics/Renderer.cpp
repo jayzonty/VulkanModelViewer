@@ -10,6 +10,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stbi/stb_image.h>
 
+#define DEFAULT_DIFFUSE_MAP_PATH "resources/textures/default_diffuse.png"
+
 /**
  * @brief Constructor
  */
@@ -172,7 +174,9 @@ void Renderer::DrawModel(Model* model)
         m_renderBatchUnits.emplace_back();
         m_renderBatchUnits.back().mesh = mesh;
 
-        std::string texturePath = mesh->diffuseMapFilePaths[0];
+        std::string texturePath = (mesh->diffuseMapFilePaths.size() > 0) 
+            ? mesh->diffuseMapFilePaths[0] : DEFAULT_DIFFUSE_MAP_PATH;
+
         if (m_textureToDescriptorSetMap.find(texturePath) == m_textureToDescriptorSetMap.end())
         {
             VulkanImage image;
@@ -282,7 +286,8 @@ void Renderer::Render(VkCommandBuffer commandBuffer, const uint32_t& imageIndex,
         vkCmdBindIndexBuffer(commandBuffer, m_frameInFlightData[imageIndex].indexBuffer.GetHandle(), indexBufferOffset, VK_INDEX_TYPE_UINT32);
         indexBufferOffset += indexBufferSize;
 
-        std::string texturePath = mesh->diffuseMapFilePaths[0];
+        std::string texturePath = (mesh->diffuseMapFilePaths.size() > 0) 
+            ? mesh->diffuseMapFilePaths[0] : DEFAULT_DIFFUSE_MAP_PATH;
         VkDescriptorSet diffuseTextureDescriptorSet = m_textureToDescriptorSetMap[texturePath];
         if (diffuseTextureDescriptorSet == VK_NULL_HANDLE)
         {
