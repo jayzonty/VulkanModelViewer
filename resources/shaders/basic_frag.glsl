@@ -6,10 +6,11 @@ layout(location = 1) in vec2 fragUV;
 
 layout(location = 0) out vec4 finalFragColor;
 
-layout(set = 2, binding = 0) uniform sampler2D texSampler;
+layout(set = 2, binding = 0) uniform sampler2D emissiveMap;
+layout(set = 3, binding = 0) uniform sampler2D diffuseMap;
 
 void main()
 {
-    finalFragColor = vec4(fragColor, 1.0) * texture(texSampler, fragUV);
+    vec4 emission = texture(emissiveMap, fragUV);
+    finalFragColor = emission + vec4(fragColor, 1.0) * texture(diffuseMap, fragUV);
 }
-

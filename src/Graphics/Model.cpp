@@ -55,9 +55,14 @@ bool Model::Load(const std::string& modelFilePath)
         {
             std::filesystem::path diffuseMapFilePath = modelDirPath / m_meshes[i]->diffuseMapFilePaths[j];
             m_meshes[i]->diffuseMapFilePaths[j] = diffuseMapFilePath.string();
-            std::cout << "Texture " << j << ": " << m_meshes[i]->diffuseMapFilePaths[j];
+            std::cout << "Diffuse Texture " << j << ": " << m_meshes[i]->diffuseMapFilePaths[j] << std::endl;
         }
-        std::cout << "Mesh " << i << " diffuse map count: " << m_meshes[i]->diffuseMapFilePaths.size() << std::endl;
+        for (size_t j = 0; j < m_meshes[i]->emissiveMapFilePaths.size(); ++j)
+        {
+            std::filesystem::path emissiveMapFilePath = modelDirPath / m_meshes[i]->emissiveMapFilePaths[j];
+            m_meshes[i]->emissiveMapFilePaths[j] = emissiveMapFilePath.string();
+            std::cout << "Emissive Texture " << j << ": " << m_meshes[i]->emissiveMapFilePaths[j] << std::endl;
+        }
     }
 
     return true;
@@ -180,6 +185,15 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, Mesh* outMesh)
             aiString textureFilePath;
             material->GetTexture(aiTextureType_DIFFUSE, i, &textureFilePath);
             outMesh->diffuseMapFilePaths.push_back(textureFilePath.C_Str());
+        }
+
+        // Emission maps
+        unsigned int numEmissionMaps = material->GetTextureCount(aiTextureType_EMISSIVE);
+        for (unsigned int i = 0; i < numEmissionMaps; ++i)
+        {
+            aiString textureFilePath;
+            material->GetTexture(aiTextureType_EMISSIVE, i, &textureFilePath);
+            outMesh->emissiveMapFilePaths.push_back(textureFilePath.C_Str());
         }
     }
 }

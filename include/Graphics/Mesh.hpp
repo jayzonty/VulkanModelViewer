@@ -27,4 +27,9 @@ struct Mesh
      * File paths to the mesh's diffuse maps
      */
     std::vector<std::string> diffuseMapFilePaths;
+
+    /**
+     * File paths to the mesh's emissive maps
+     */
+    std::vector<std::string> emissiveMapFilePaths;
 };

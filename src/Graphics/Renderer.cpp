@@ -10,6 +10,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stbi/stb_image.h>
 
+#include <array>
+
+#define DEFAULT_EMISSIVE_MAP_PATH "resources/textures/default_emissive.png"
 #define DEFAULT_DIFFUSE_MAP_PATH "resources/textures/default_diffuse.png"
 
 /**
@@ -176,9 +179,51 @@ void Renderer::DrawModel(Model* model, const glm::mat4& transform)
         m_renderBatchUnits.back().mesh = mesh;
         m_renderBatchUnits.back().transform = transform;
 
+        std::string emissiveTexturePath = (mesh->emissiveMapFilePaths.size() > 0) 
+            ? mesh->emissiveMapFilePaths[0] : DEFAULT_EMISSIVE_MAP_PATH;
+        if (m_textureToDescriptorSetMap.find(emissiveTexturePath) == m_textureToDescriptorSetMap.end())
+        {
+            VulkanImage image;
+            CreateTextureImage(emissiveTexturePath, image);
+            m_textureToVulkanImageMap.insert({ emissiveTexturePath, image });
+
+            VulkanImageView imageView;
+            imageView.Create(image.GetHandle(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+            m_textureToVulkanImageViewMap.insert({ emissiveTexturePath, imageView });
+
+            VkDescriptorSet imageDescriptorSet = {};
+
+            VkDescriptorSetAllocateInfo allocInfo = {};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = m_vkDescriptorPool;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &m_vkSingleTextureDescriptorSetLayout;
+            vkAllocateDescriptorSets(VulkanContext::GetLogicalDevice(), &allocInfo, &imageDescriptorSet);
+
+            VkDescriptorImageInfo imageInfo = {};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = imageView.GetHandle();
+            imageInfo.sampler = m_vkTextureSampler;
+
+            VkWriteDescriptorSet descriptorWrite = {};
+            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrite.dstSet = imageDescriptorSet;
+            descriptorWrite.dstBinding = 0;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pBufferInfo = nullptr;
+            descriptorWrite.pImageInfo = &imageInfo;
+            descriptorWrite.pTexelBufferView = nullptr;
+
+            vkUpdateDescriptorSets(VulkanContext::GetLogicalDevice(), 1, &descriptorWrite, 0, nullptr);
+
+            m_textureToDescriptorSetMap.insert({ emissiveTexturePath, imageDescriptorSet });
+        }
+
+
         std::string texturePath = (mesh->diffuseMapFilePaths.size() > 0) 
             ? mesh->diffuseMapFilePaths[0] : DEFAULT_DIFFUSE_MAP_PATH;
-
         if (m_textureToDescriptorSetMap.find(texturePath) == m_textureToDescriptorSetMap.end())
         {
             VulkanImage image;
@@ -286,15 +331,15 @@ void Renderer::Render(VkCommandBuffer commandBuffer, const uint32_t& imageIndex,
 
         vkCmdBindIndexBuffer(commandBuffer, m_frameInFlightData[imageIndex].indexBuffer.GetHandle(), indexBufferOffset, VK_INDEX_TYPE_UINT32);
         indexBufferOffset += indexBufferSize;
-
-        std::string texturePath = (mesh->diffuseMapFilePaths.size() > 0) 
+        
+        std::string emissiveTexturePath = (mesh->emissiveMapFilePaths.size() > 0) 
+            ? mesh->emissiveMapFilePaths[0] : DEFAULT_EMISSIVE_MAP_PATH;
+        VkDescriptorSet emissiveTextureDescriptorSet = m_textureToDescriptorSetMap[emissiveTexturePath];
+        std::string diffuseTexturePath = (mesh->diffuseMapFilePaths.size() > 0) 
             ? mesh->diffuseMapFilePaths[0] : DEFAULT_DIFFUSE_MAP_PATH;
-        VkDescriptorSet diffuseTextureDescriptorSet = m_textureToDescriptorSetMap[texturePath];
-        if (diffuseTextureDescriptorSet == VK_NULL_HANDLE)
-        {
-            std::cout << "Diffuse texture descriptor set is null handle" << std::endl;
-        }
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 2, 1, &diffuseTextureDescriptorSet, 0, nullptr);
+        VkDescriptorSet diffuseTextureDescriptorSet = m_textureToDescriptorSetMap[diffuseTexturePath];
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 2, 1, &emissiveTextureDescriptorSet, 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_vkPipelineLayout, 3, 1, &diffuseTextureDescriptorSet, 0, nullptr);
 
         // Draw the geometry
         // vertexCount -> instanceCount -> firstVertex -> firstInstance
@@ -433,17 +478,32 @@ bool Renderer::CreateDescriptorSetLayout()
     }
 
     // Descriptor set layout for the sampler descriptor set
+    // Emissive map sampler binding
+    VkDescriptorSetLayoutBinding emissiveMapSamplerBinding = {};
+    emissiveMapSamplerBinding.binding = 0;
+    emissiveMapSamplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    emissiveMapSamplerBinding.descriptorCount = 1;
+    emissiveMapSamplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // We'll use the sampler in the fragment shader
+    emissiveMapSamplerBinding.pImmutableSamplers = nullptr;
+
+    // Diffuse map sampler binding
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    samplerLayoutBinding.binding = 0;
+    samplerLayoutBinding.binding = 1;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.descriptorCount = 1;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // We'll use the sampler in the fragment shader
     samplerLayoutBinding.pImmutableSamplers = nullptr;
 
+    std::array<VkDescriptorSetLayoutBinding, 2> samplersLayoutBindings =
+    {
+        emissiveMapSamplerBinding,
+        samplerLayoutBinding
+    };
+
     VkDescriptorSetLayoutCreateInfo samplerLayoutInfo = {};
     samplerLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    samplerLayoutInfo.bindingCount = 1;
-    samplerLayoutInfo.pBindings = &samplerLayoutBinding;
+    samplerLayoutInfo.bindingCount = samplersLayoutBindings.size();
+    samplerLayoutInfo.pBindings = samplersLayoutBindings.data();
 
     if (vkCreateDescriptorSetLayout(VulkanContext::GetLogicalDevice(), &samplerLayoutInfo, nullptr, &m_vkSingleTextureDescriptorSetLayout) != VK_SUCCESS)
     {
@@ -559,7 +619,7 @@ bool Renderer::CreateGraphicsPipeline(VkRenderPass renderPass)
     dynamicStateCreateInfo.pDynamicStates = dynamicStates;
 
     // Create pipeline layout
-    std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = { m_vkPerFrameDescriptorSetLayout, m_vkPerObjectDescriptorSetLayout, m_vkSingleTextureDescriptorSetLayout };
+    std::array<VkDescriptorSetLayout, 4> descriptorSetLayouts = { m_vkPerFrameDescriptorSetLayout, m_vkPerObjectDescriptorSetLayout, m_vkSingleTextureDescriptorSetLayout, m_vkSingleTextureDescriptorSetLayout };
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
