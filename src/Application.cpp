@@ -8,6 +8,9 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <algorithm>
 #include <iostream>
 
 Application::Application()
@@ -32,6 +35,8 @@ Application::Application()
     , m_camera()
     , m_renderer()
     , m_currentModel()
+    , m_currentModelTransform(1.0f)
+    , m_vkImguiPool(VK_NULL_HANDLE)
 {
 }
 
@@ -388,7 +393,7 @@ void Application::Render(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     m_renderer.Begin();
 
-    m_renderer.DrawModel(m_currentModel);
+    m_renderer.DrawModel(m_currentModel, m_currentModelTransform);
 
     m_renderer.End();
 
@@ -1031,5 +1036,34 @@ void Application::DropCallback(GLFWwindow* window, int count, const char** paths
         application->m_currentModel = new Model();
     }
 
-    application->m_currentModel->Load(paths[0]);
+    Model* model = application->m_currentModel;
+    model->Load(paths[0]);
+    
+    // --- Scale model to have its largest dimension be of scale 1.0
+    if (model->GetTotalVertexCount() > 0)
+    {
+        // Calculate model bounding box
+        glm::vec3 min = model->GetMeshes()[0]->vertices[0].position;
+        glm::vec3 max = min;
+
+        for (size_t i = 0; i < model->GetMeshes().size(); ++i)
+        {
+            Mesh* mesh = model->GetMeshes()[i];
+            for (size_t j = 0; j < mesh->vertices.size(); ++j)
+            {
+                min.x = std::min(min.x, mesh->vertices[j].position.x);
+                min.y = std::min(min.y, mesh->vertices[j].position.y);
+                min.z = std::min(min.z, mesh->vertices[j].position.z);
+                max.x = std::max(max.x, mesh->vertices[j].position.x);
+                max.y = std::max(max.y, mesh->vertices[j].position.y);
+                max.z = std::max(max.z, mesh->vertices[j].position.z);
+            }
+        }
+
+        glm::vec3 dimensions = max - min;
+        float maxDimension = std::max({dimensions.x, dimensions.y, dimensions.z});
+        float modelScale = 2.0f / maxDimension;
+
+        application->m_currentModelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(modelScale));
+    }
 }

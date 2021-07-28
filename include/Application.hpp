@@ -9,6 +9,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 /**
  * Application class
  */
@@ -128,7 +130,15 @@ private:
 
     Renderer m_renderer;
 
+    /**
+     * Current model being displayed
+     */
     Model* m_currentModel;
+
+    /**
+     * Transformation matrix of the current model being displayed
+     */
+    glm::mat4 m_currentModelTransform;
 
     VkDescriptorPool m_vkImguiPool;
 

@@ -158,8 +158,9 @@ void Renderer::Begin()
 /**
  * @brief Adds the model to the render batch.
  * @param[in] model Model to add to the render batch
+ * @param[in] transform Transformation matrix
  */
-void Renderer::DrawModel(Model* model)
+void Renderer::DrawModel(Model* model, const glm::mat4& transform)
 {
     if (model == nullptr)
     {
@@ -173,6 +174,7 @@ void Renderer::DrawModel(Model* model)
 
         m_renderBatchUnits.emplace_back();
         m_renderBatchUnits.back().mesh = mesh;
+        m_renderBatchUnits.back().transform = transform;
 
         std::string texturePath = (mesh->diffuseMapFilePaths.size() > 0) 
             ? mesh->diffuseMapFilePaths[0] : DEFAULT_DIFFUSE_MAP_PATH;
@@ -265,8 +267,7 @@ void Renderer::Render(VkCommandBuffer commandBuffer, const uint32_t& imageIndex,
     {
         Mesh* mesh = m_renderBatchUnits[i].mesh;
 
-        glm::mat4 modelMatrix(1.0f);
-        objectUBOData[i].model = modelMatrix;
+        objectUBOData[i].model = m_renderBatchUnits[i].transform;
 
         VkDeviceSize vertexBufferSize = mesh->vertices.size() * sizeof(Vertex);
         void* data = m_vertexStagingBuffer.MapMemory(vertexBufferOffset, vertexBufferSize);

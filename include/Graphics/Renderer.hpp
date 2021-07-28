@@ -6,6 +6,7 @@
 #include "Graphics/Vulkan/VulkanImage.hpp"
 #include "Graphics/Vulkan/VulkanImageView.hpp"
 
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
 #include <iostream>
@@ -42,8 +43,9 @@ public:
     /**
      * @brief Adds the model to the render batch.
      * @param[in] model Model to add to the render batch
+     * @param[in] transform Transformation matrix
      */
-    void DrawModel(Model* model);
+    void DrawModel(Model* model, const glm::mat4& transform);
 
     /**
      * @brief Ends the render batch.
@@ -86,6 +88,8 @@ private:
     struct RenderBatchUnit
     {
         Mesh* mesh;
+
+        glm::mat4 transform;
     };
 
     /**
