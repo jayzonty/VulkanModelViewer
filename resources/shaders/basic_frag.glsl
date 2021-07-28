@@ -12,5 +12,15 @@ layout(set = 3, binding = 0) uniform sampler2D diffuseMap;
 void main()
 {
     vec4 emission = texture(emissiveMap, fragUV);
-    finalFragColor = emission + vec4(fragColor, 1.0) * texture(diffuseMap, fragUV);
+    float emissionAlpha = emission.a;
+
+    vec4 diffuse = texture(diffuseMap, fragUV);
+    float diffuseAlpha = diffuse.a;
+
+    if (emissionAlpha * diffuseAlpha < 0.1)
+    {
+        discard;
+    }
+
+    finalFragColor = emission + vec4(fragColor, 1.0) * diffuse;
 }
