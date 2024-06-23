@@ -5,16 +5,31 @@ project(VulkanModelViewer)
 
 find_package(Vulkan REQUIRED)
 
-add_subdirectory(deps/glfw3-3-4)
-add_subdirectory(deps/assimp)
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
 
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE )
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE )
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE )
+FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY "https://github.com/glfw/glfw.git"
+        GIT_TAG "3.4"
+        GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(glfw)
 
 set(BUILD_SHARED_LIBS ON)
+set(ASSIMP_BUILD_ZLIB ON)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+        assimp
+        GIT_REPOSITORY "https://github.com/assimp/assimp"
+        GIT_TAG "v5.4.1"
+        GIT_PROGRESS TRUE
+)
+FetchContent_MakeAvailable(assimp)
 
 # C++ standard
 set(CMAKE_CXX_STANDARD 20)
@@ -24,7 +39,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Specify include directories
-include_directories(${Vulkan_INCLUDE_DIR} deps/glm/include deps/assimp/include deps/stbi/include deps/imgui include)
+include_directories(${Vulkan_INCLUDE_DIR} deps/glm/include deps/stbi/include deps/imgui include)
 
 # Set SOURCES to contain all the source files
 set(SOURCES
@@ -58,6 +73,7 @@ set(SOURCES
 add_executable(VulkanModelViewer ${SOURCES})
 
 target_compile_options(VulkanModelViewer PUBLIC -Wall)
+#add_definitions(-w)
 
 # Link libraries
 target_link_libraries(VulkanModelViewer ${Vulkan_LIBRARY} glfw assimp)
